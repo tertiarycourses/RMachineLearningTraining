@@ -1,5 +1,5 @@
 #===================================================================
-#                        Multiple Linear Regression
+#                        Logistic Regression Classifier
 #===================================================================
 
 library(mlr)
@@ -19,16 +19,20 @@ library(mlr)
 ############################# Making Tasks
 
 ### Splitting data
-data(Boston)
-nr <- nrow(Boston)
-inTrain <- sample(1:nr, 0.6*nr)
-bh.train <- Boston[inTrain,]
-bh.test <- Boston[-inTrain,]
+data(iris)
+iris2=subset(iris, subset=iris$Species %in% c("versicolor","virginica"))
+# iris2$Species=as.numeric(iris2$Species)-1
+iris2$Species=factor(iris2$Species)
 
+
+nr <- nrow(iris2)
+inTrain <- sample(1:nr, 0.6*nr)
+ir2.train <- iris2[inTrain,]
+ir2.test <- iris2[-inTrain,]
 
 ### Making Tasks
-regr.task = makeRegrTask(id = "bh", data = bh.train, target= "medv")
-regr.task
+log.task = makeClassifTask(id = "ir2", data = ir2.train, target= "Species")
+log.task
 
 
 ########################## Making Learner
@@ -38,17 +42,17 @@ lrns = listLearners()
 head(lrns[c("class", "package")])
 
 
-lrns = listLearners("regr", properties = "numerics")
+lrns = listLearners("classif", properties = "prob")
 head(lrns[c("class", "package")])
 
 lrns$class  # see all our regression options
 
 
-regr.lrn = makeLearner("regr.lm")
-regr.lrn
+log.lrn = makeLearner("classif.logreg", predict.type = "prob") #(if you want probabililties)
+log.lrn
 
 ########################## Train the model
-mod = train(regr.lrn, regr.task)
+mod = train(log.lrn, log.task)
 mod
 
 names(mod)
@@ -58,17 +62,30 @@ getLearnerModel(mod)
 
 ######################## Predictions
 
-bh.pred = predict(mod, newdata = bh.test)
-bh.pred
+log.pred = predict(mod, newdata = ir2.test)
+log.pred
 
-performance(bh.pred, measures = list(rmse))
+performance(log.pred, measures = list(mmce, acc))
 
-head(getPredictionTruth(bh.pred))
+head(getPredictionTruth(log.pred))
 
-head(getPredictionResponse(bh.pred))
+head(getPredictionResponse(log.pred))
+
+### Confusion Matrix
+
+calculateConfusionMatrix(log.pred)
+
+
+### ROC curve
+
+## for ROC the prediction must be type "prob"
+## so we run the model again , but include this setting
+
+
+df = generateThreshVsPerfData(log.pred, measures = list(fpr, tpr,mmce))
+plotROCCurves(df)
+
 
 ### visualize results
-plotLearnerPrediction(regr.lrn, features="lstat", task=bh.task)
-
-
-
+plotLearnerPrediction(log.lrn, features=c("Petal.Length","Petal.Width"), 
+                      task=log.task)

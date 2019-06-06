@@ -1,5 +1,5 @@
 #===================================================================
-#                        Kmeans Clustering
+#                        Naive Bayes Classifier
 #===================================================================
 
 library(mlr)
@@ -23,16 +23,15 @@ data(iris)
 
 nr <- nrow(iris)
 inTrain <- sample(1:nr, 0.6*nr)
-ir2.train <- iris[inTrain,-5]
-ir2.test <- iris[-inTrain,-5]
-ir2.Class<- iris[-inTrain,5]
-## clustering only deals with numeric data
-
+iris.train <- iris[inTrain,]
+iris.test <- iris[-inTrain,]
 
 
 ### Making Tasks
-kmeans.task = makeClusterTask(id ="ir2", data = ir2.train)
-kmeans.task
+nb.task = makeClassifTask(id ="iris", 
+                          data = iris.train, 
+                          target= "Species")
+nb.task
 
 
 ########################## Making Learner
@@ -42,18 +41,17 @@ lrns = listLearners()
 head(lrns[c("class", "package")])
 
 
-lrns = listLearners("cluster", properties = "prob")
+lrns = listLearners("classif", properties = "prob")
 head(lrns[c("class", "package")])
 
 lrns$class  # see all our regression options
 
 
-kmeans.lrn = makeLearner("cluster.kmeans", centers = 3)
-# specify how many clusters centers you want
+nb.lrn = makeLearner("classif.naiveBayes")   
 
 
 ########################## Train the model
-mod = train(kmeans.lrn, kmeans.task)
+mod = train(nb.lrn, nb.task)
 mod
 
 names(mod)
@@ -63,12 +61,30 @@ getLearnerModel(mod)
 
 ######################## Predictions
 
-kmeans.pred = predict(mod, newdata = ir2.test)
-kmeans.pred
+nb.pred = predict(mod, newdata = iris.test)
+nb.pred
 
-head(getPredictionResponse(kmeans.pred))
+performance(nb.pred, measures = list(mmce, acc))
+
+head(getPredictionTruth(nb.pred))
+
+head(getPredictionResponse(nb.pred))
+
+### Confusion Matrix
+
+calculateConfusionMatrix(nb.pred)
 
 
 ### visualize results
-plotLearnerPrediction(kmeans.lrn, features=c("Petal.Length","Petal.Width"), 
-                      task=kmeans.task)
+plotLearnerPrediction(nb.lrn, 
+                      features=c("Petal.Length","Petal.Width"), 
+                      task=nb.task)
+
+fimp=generateFeatureImportanceData(task=nb.task,
+                                   learner=nb.lrn)
+ll=length(iris.test)-1
+fimp$res
+barplot(as.matrix(fimp$res[1:ll]), 
+        names.arg =names(fimp$res[1:ll]),
+        xlab=row.names(fimp$res),
+        horiz=T)

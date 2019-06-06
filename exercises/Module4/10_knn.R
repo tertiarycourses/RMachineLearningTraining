@@ -1,5 +1,5 @@
 #===================================================================
-#                        Linear Discriminant Analysis
+#                        KNN Classifier
 #===================================================================
 
 library(mlr)
@@ -20,19 +20,18 @@ library(mlr)
 
 ### Splitting data
 data(iris)
-iris2=subset(iris, subset=iris$Species %in% c("versicolor","virginica"))
-iris2$Species=factor(iris2$Species)
 
-
-nr <- nrow(iris2)
+nr <- nrow(iris)
 inTrain <- sample(1:nr, 0.6*nr)
-ir2.train <- iris2[inTrain,]
-ir2.test <- iris2[-inTrain,]
+iris.train <- iris[inTrain,]
+iris.test <- iris[-inTrain,]
 
 
 ### Making Tasks
-lda.task = makeClassifTask(id = "ir2", data = ir2.train, target= "Species")
-lda.task
+knn.task = makeClassifTask(id ="iris", 
+                           data = iris.train, 
+                           target= "Species")
+knn.task
 
 
 ########################## Making Learner
@@ -48,11 +47,11 @@ head(lrns[c("class", "package")])
 lrns$class  # see all our regression options
 
 
-lda.lrn = makeLearner("classif.lda")   #predict.type = "prob" (if you want probabililties)
-lda.lrn
+knn.lrn = makeLearner("classif.knn")   
+
 
 ########################## Train the model
-mod = train(lda.lrn, lda.task)
+mod = train(knn.lrn, knn.task)
 mod
 
 names(mod)
@@ -62,20 +61,30 @@ getLearnerModel(mod)
 
 ######################## Predictions
 
-lda.pred = predict(mod, newdata = ir2.test)
-lda.pred
+knn.pred = predict(mod, newdata = iris.test)
+knn.pred
 
-performance(lda.pred, measures = list(mmce, acc))
+performance(knn.pred, measures = list(mmce, acc))
 
-head(getPredictionTruth(lda.pred))
+head(getPredictionTruth(knn.pred))
 
-head(getPredictionResponse(lda.pred))
+head(getPredictionResponse(knn.pred))
 
 ### Confusion Matrix
 
-calculateConfusionMatrix(lda.pred)
+calculateConfusionMatrix(knn.pred)
 
 
 ### visualize results
-plotLearnerPrediction(lda.lrn, features=c("Petal.Length","Petal.Width"), 
-                      task=lda.task)
+plotLearnerPrediction(knn.lrn, 
+                      features=c("Petal.Length","Petal.Width"), 
+                      task=knn.task)
+
+fimp=generateFeatureImportanceData(task=knn.task,
+                                   learner=knn.lrn)
+ll=length(iris.test)-1
+fimp$res
+barplot(as.matrix(fimp$res[1:ll]), 
+        names.arg =names(fimp$res[1:ll]),
+        xlab=row.names(fimp$res),
+        horiz=T)

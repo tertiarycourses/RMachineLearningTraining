@@ -1,5 +1,5 @@
 #===================================================================
-#                        KNN Classifier
+#                        Multiple Linear Regression
 #===================================================================
 
 library(mlr)
@@ -19,17 +19,20 @@ library(mlr)
 ############################# Making Tasks
 
 ### Splitting data
-data(iris)
+Boston=read.csv(file.choose())   # from MLM datasets
+Boston=Boston[,-1]
+View(Boston)
 
-nr <- nrow(iris)
+nr <- nrow(Boston)
 inTrain <- sample(1:nr, 0.6*nr)
-iris.train <- iris[inTrain,]
-iris.test <- iris[-inTrain,]
+regr.train <- Boston[inTrain,]
+regr.test <- Boston[-inTrain,]
 
 
 ### Making Tasks
-knn.task = makeClassifTask(id ="iris", data = iris.train, target= "Species")
-knn.task
+regr.task = makeRegrTask(id = "bh", data = regr.train, 
+                         target= "medv")
+regr.task
 
 
 ########################## Making Learner
@@ -38,18 +41,23 @@ knn.task
 lrns = listLearners()
 head(lrns[c("class", "package")])
 
+lrns = listLearners("classif") #, properties = "numerics")
+head(lrns[c("class", "package")])
 
-lrns = listLearners("classif", properties = "prob")
+lrns$class  # see all our classification options
+
+
+lrns = listLearners("regr", properties = "numerics")
 head(lrns[c("class", "package")])
 
 lrns$class  # see all our regression options
 
 
-knn.lrn = makeLearner("classif.knn")   
-
+regr.lrn = makeLearner("regr.lm")
+regr.lrn
 
 ########################## Train the model
-mod = train(knn.lrn, knn.task)
+mod = train(regr.lrn, regr.task)
 mod
 
 names(mod)
@@ -58,21 +66,18 @@ names(mod)
 getLearnerModel(mod)
 
 ######################## Predictions
+regr.pred = predict(mod, newdata = regr.test)
+regr.pred
 
-knn.pred = predict(mod, newdata = iris.test)
-knn.pred
+performance(regr.pred, measures = list(mlr::rmse, mlr::rsq))
+plot(regr.pred$data$truth, regr.pred$data$response)
 
-performance(knn.pred, measures = list(mmce, acc))
+head(getPredictionTruth(regr.pred))
 
-head(getPredictionTruth(knn.pred))
+head(getPredictionResponse(regr.pred))
 
-head(getPredictionResponse(knn.pred))
 
-### Confusion Matrix
-
-calculateConfusionMatrix(knn.pred)
-
+plot(getLearnerModel(mod, more.unwrap = TRUE))
 
 ### visualize results
-plotLearnerPrediction(knn.lrn, features=c("Petal.Length","Petal.Width"), 
-                      task=knn.task)
+plotLearnerPrediction(regr.lrn, features="lstat", task=regr.task)

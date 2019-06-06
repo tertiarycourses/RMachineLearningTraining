@@ -1,5 +1,5 @@
 #===================================================================
-#                        Random Forest Classifier
+#                        Decision Tree Classifier
 #===================================================================
 
 library(mlr)
@@ -26,10 +26,11 @@ inTrain <- sample(1:nr, 0.6*nr)
 iris.train <- iris[inTrain,]
 iris.test <- iris[-inTrain,]
 
-
 ### Making Tasks
-nb.task = makeClassifTask(id ="iris", data = iris.train, target= "Species")
-nb.task
+rpart.task = makeClassifTask(id = "iris", 
+                             data = iris.train, 
+                             target= "Species")
+rpart.task
 
 
 ########################## Making Learner
@@ -45,11 +46,11 @@ head(lrns[c("class", "package")])
 lrns$class  # see all our regression options
 
 
-nb.lrn = makeLearner("classif.naiveBayes")   
+rpart.lrn = makeLearner("classif.rpart",predict.type = "prob")  
 
 
 ########################## Train the model
-mod = train(nb.lrn, nb.task)
+mod = train(rpart.lrn, rpart.task)
 mod
 
 names(mod)
@@ -59,20 +60,20 @@ getLearnerModel(mod)
 
 ######################## Predictions
 
-nb.pred = predict(mod, newdata = iris.test)
-nb.pred
+rpart.pred = predict(mod, newdata = iris.test)
+rpart.pred
 
-performance(nb.pred, measures = list(mmce, acc))
+performance(rpart.pred, measures = list(mmce, acc))
 
-head(getPredictionTruth(nb.pred))
+head(getPredictionTruth(rpart.pred))
 
-head(getPredictionResponse(nb.pred))
+head(getPredictionResponse(rpart.pred))
 
 ### Confusion Matrix
 
-calculateConfusionMatrix(nb.pred)
+calculateConfusionMatrix(rpart.pred)
 
 
 ### visualize results
-plotLearnerPrediction(nb.lrn, features=c("Petal.Length","Petal.Width"), 
-                      task=nb.task)
+plotLearnerPrediction(rpart.lrn, features=c("Petal.Length","Petal.Width"), 
+                      task=rpart.task)

@@ -1,5 +1,5 @@
 #===================================================================
-#                        Logistic Regression Classifier
+#                        SVM Classifier
 #===================================================================
 
 library(mlr)
@@ -31,8 +31,10 @@ ir2.test <- iris2[-inTrain,]
 
 
 ### Making Tasks
-log.task = makeClassifTask(id = "ir2", data = ir2.train, target= "Species")
-log.task
+svm.task = makeClassifTask(id = "ir2", 
+                           data = ir2.train, 
+                           target= "Species")
+svm.task
 
 
 ########################## Making Learner
@@ -48,11 +50,11 @@ head(lrns[c("class", "package")])
 lrns$class  # see all our regression options
 
 
-log.lrn = makeLearner("classif.logreg") #predict.type = "prob") #(if you want probabililties)
-log.lrn
+svm.lrn = makeLearner("classif.svm")   #predict.type = "prob" (if you want probabililties)
+svm.lrn
 
 ########################## Train the model
-mod = train(log.lrn, log.task)
+mod = train(svm.lrn, svm.task)
 mod
 
 names(mod)
@@ -62,30 +64,31 @@ getLearnerModel(mod)
 
 ######################## Predictions
 
-log.pred = predict(mod, newdata = ir2.test)
-log.pred
+svm.pred = predict(mod, newdata = ir2.test)
+svm.pred
 
-performance(log.pred, measures = list(mmce, acc))
+performance(svm.pred, measures = list(mmce, acc))
 
-head(getPredictionTruth(log.pred))
+head(getPredictionTruth(svm.pred))
 
-head(getPredictionResponse(log.pred))
+head(getPredictionResponse(svm.pred))
 
 ### Confusion Matrix
 
-calculateConfusionMatrix(log.pred)
-
-
-### ROC curve
-
-## for ROC the prediction must be type "prob"
-## so we run the model again , but include this setting
-
-
-df = generateThreshVsPerfData(log.pred, measures = list(fpr, tpr,mmce))
-plotROCCurves(df)
+calculateConfusionMatrix(svm.pred)
 
 
 ### visualize results
-plotLearnerPrediction(log.lrn, features=c("Petal.Length","Petal.Width"), 
-                      task=log.task)
+plotLearnerPrediction(svm.lrn, features=c("Petal.Length",
+                                          "Petal.Width"), 
+                      task=svm.task)
+
+
+fimp=generateFeatureImportanceData(task=svm.task,
+                                   learner=svm.lrn)
+ll=length(iris.test)-1
+fimp$res
+barplot(as.matrix(fimp$res[1:ll]), 
+        names.arg =names(fimp$res[1:ll]),
+        xlab=row.names(fimp$res),
+        horiz=T)
